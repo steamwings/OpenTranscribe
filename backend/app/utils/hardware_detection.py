@@ -337,15 +337,19 @@ class HardwareConfig:
             )
 
         elif self.device == "cuda":
-            # CUDA optimizations
-            env_vars.update({"TORCH_CUDA_ARCH_LIST": "6.0 6.1 7.0 7.5 8.0 8.6+PTX"})
+            # CUDA optimizations - only set NVIDIA-specific vars when not on ROCm
+            import torch
+
+            is_rocm = hasattr(torch.version, "hip") and torch.version.hip is not None
+            if not is_rocm:
+                env_vars.update({"TORCH_CUDA_ARCH_LIST": "6.0 6.1 7.0 7.5 8.0 8.6+PTX"})
             # Docker maps GPU_DEVICE_ID to container device 0
 
         return env_vars
 
     def get_summary(self) -> dict[str, Any]:
         """Get summary of hardware configuration."""
-        return {
+        summary: dict[str, Any] = {
             "system": self.system,
             "machine": self.machine,
             "device": self.device,
@@ -354,6 +358,15 @@ class HardwareConfig:
             "torch_available": self.torch_available,
             "torch_version": self.torch_version,
         }
+        if self.torch_available and self.device == "cuda":
+            import torch
+
+            if hasattr(torch.version, "hip") and torch.version.hip is not None:
+                summary["gpu_backend"] = "rocm"
+                summary["hip_version"] = torch.version.hip
+            else:
+                summary["gpu_backend"] = "cuda"
+        return summary
 
     def validate_configuration(self) -> tuple[bool, str]:
         """Validate the current configuration."""
@@ -417,18 +430,23 @@ def get_docker_runtime_config() -> dict[str, Any]:
     }
 
     if config.device == "cuda":
-        # NVIDIA GPU runtime
-        docker_config["deploy"]["resources"] = {
-            "reservations": {
-                "devices": [
-                    {
-                        "driver": "nvidia",
-                        "device_ids": [os.getenv("GPU_DEVICE_ID", "0")],
-                        "capabilities": ["gpu"],
-                    }
-                ]
+        import torch
+
+        is_rocm = hasattr(torch.version, "hip") and torch.version.hip is not None
+        if not is_rocm:
+            # NVIDIA GPU runtime
+            docker_config["deploy"]["resources"] = {
+                "reservations": {
+                    "devices": [
+                        {
+                            "driver": "nvidia",
+                            "device_ids": [os.getenv("GPU_DEVICE_ID", "0")],
+                            "capabilities": ["gpu"],
+                        }
+                    ]
+                }
             }
-        }
+        # ROCm uses device passthrough (/dev/kfd, /dev/dri), not Docker deploy resources
 
     return docker_config
 
