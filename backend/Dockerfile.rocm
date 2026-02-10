@@ -64,7 +64,7 @@ LABEL org.opencontainers.image.title="OpenTranscribe Backend (ROCm)" \
 # at runtime. PyTorch bundles some ROCm libs but not hipblas/rocblas.
 # We use the AMD apt repo targeting Ubuntu Noble (24.04), which is compatible
 # with Debian Trixie for these shared library packages.
-ARG ROCM_VERSION=6.4
+ARG ROCM_VERSION=7.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ffmpeg \

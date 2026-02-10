@@ -38,11 +38,12 @@ qrcode[pil]>=7.4.0
 # Non-GPU packages are identical to requirements.txt
 numpy>=1.25.2
 
-# PyTorch with ROCm 6.4 support for AMD GPUs
-# Same version as CUDA build, different backend
---extra-index-url https://download.pytorch.org/whl/rocm6.4
-torch==2.8.0
-torchaudio==2.8.0
+# PyTorch with ROCm 7.0 support for AMD GPUs
+# Must use ROCm 7.0 to match CTranslate2 4.7.1's ROCm wheel (needs libhipblas.so.3)
+# PyTorch 2.10.0 is the version available for rocm7.0
+--extra-index-url https://download.pytorch.org/whl/rocm7.0
+torch==2.10.0
+torchaudio==2.10.0
 
 # WhisperX latest version with ctranslate2 4.5+ support
 whisperx==3.7.0
