@@ -71,7 +71,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Create non-root user for security
 # Add to video and render groups for ROCm GPU access (/dev/kfd, /dev/dri)
-RUN groupadd -r appuser && \
+RUN groupadd -r render && \
+    groupadd -r appuser && \
     useradd -r -g appuser -G video,render -u 1000 -m -s /bin/bash appuser && \
     mkdir -p /app /app/models /app/temp && \
     chown -R appuser:appuser /app && \
