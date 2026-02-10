@@ -60,8 +60,11 @@ LABEL org.opencontainers.image.title="OpenTranscribe Backend (ROCm)" \
       org.opencontainers.image.documentation="https://github.com/davidamacey/OpenTranscribe/blob/master/README.md"
 
 # Install runtime dependencies and ROCm runtime libraries
-# ROCm libs (hipblas, rocblas, etc.) are needed by CTranslate2's ROCm wheel
-# at runtime. PyTorch bundles some ROCm libs but not hipblas/rocblas.
+# ROCm 7.0 libs are needed by CTranslate2's ROCm wheel at runtime.
+# hsa-rocr provides the HSA runtime (libhsa-runtime64.so) with symbols like
+# hsa_amd_memory_get_preferred_copy_engine that ROCm 7.0's libamdhip64 requires.
+# PyTorch bundles ROCm 6.4 libs but uses the system HSA runtime from /opt/rocm/lib
+# (first in LD_LIBRARY_PATH) — this is safe because HSA is backwards compatible.
 # We use the AMD apt repo targeting Ubuntu Noble (24.04), which is compatible
 # with Debian Trixie for these shared library packages.
 ARG ROCM_VERSION=7.0
@@ -74,6 +77,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && echo "deb [arch=amd64 trusted=yes] https://repo.radeon.com/rocm/apt/${ROCM_VERSION}/ noble main" \
        > /etc/apt/sources.list.d/rocm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
+    hsa-rocr \
     hipblas \
     hiprand \
     hipsparse \
