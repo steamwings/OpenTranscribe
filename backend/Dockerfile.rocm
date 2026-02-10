@@ -71,10 +71,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     libimage-exiftool-perl \
     libgomp1 \
-    gnupg2 \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -sL https://repo.radeon.com/rocm/rocm.gpg.key | gpg --dearmor -o /etc/apt/keyrings/rocm.gpg \
-    && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${ROCM_VERSION}/ noble main" \
+    && echo "deb [arch=amd64 trusted=yes] https://repo.radeon.com/rocm/apt/${ROCM_VERSION}/ noble main" \
        > /etc/apt/sources.list.d/rocm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
     hipblas \
