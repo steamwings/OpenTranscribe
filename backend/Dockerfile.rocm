@@ -75,6 +75,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
        > /etc/apt/sources.list.d/rocm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
     hipblas \
+    hiprand \
+    hipsparse \
+    hipsolver \
+    hipfft \
+    miopen-hip \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
