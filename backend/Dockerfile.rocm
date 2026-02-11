@@ -85,6 +85,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     hipfft \
     miopen-hip \
     rocrand-dev \
+    hip-dev \
     && echo "/opt/rocm/lib" > /etc/ld.so.conf.d/rocm.conf \
     && ldconfig \
     && ln -sf /opt/rocm/lib/libhsa-runtime64.so.1 /usr/lib/x86_64-linux-gnu/libhsa-runtime64.so.1 \
