@@ -65,6 +65,9 @@ LABEL org.opencontainers.image.title="OpenTranscribe Backend (ROCm)" \
 # rocrand-dev: Headers for MIOpen JIT kernel compilation on consumer GPUs (gfx1100/1101)
 #   PyTorch ROCm wheels lack pre-compiled MIOpen kernels for RDNA 3, so MIOpen compiles
 #   them at first run. This needs rocrand headers (rocrand/rocrand_xorwow.h).
+# hip-runtime-amd-dev: HIP runtime headers (hip/hip_runtime.h) needed by rocrand headers.
+#   Using hip-runtime-amd-dev instead of hip-dev to avoid pulling in rocm-llvm which
+#   has unmet libstdc++-11-dev dependencies on Debian Trixie.
 # Debian Trixie ships libhsa-runtime64-1 (ROCm 6.x) which we override via symlink.
 # We use the AMD apt repo targeting Ubuntu Noble (24.04), compatible with Trixie.
 ARG ROCM_VERSION=7.0
@@ -85,7 +88,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     hipfft \
     miopen-hip \
     rocrand-dev \
-    hip-dev \
+    hip-runtime-amd-dev \
     && echo "/opt/rocm/lib" > /etc/ld.so.conf.d/rocm.conf \
     && ldconfig \
     && ln -sf /opt/rocm/lib/libhsa-runtime64.so.1 /usr/lib/x86_64-linux-gnu/libhsa-runtime64.so.1 \
