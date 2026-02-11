@@ -14,14 +14,16 @@
 # On macOS or systems without AMD GPU, this file is not loaded, allowing the base
 # docker-compose.yml to work on CPU-only systems.
 #
-# Configuration:
+# Configuration (.env file):
 #   GPU_DEVICE_ID - GPU device to use (default: 0)
 #   HSA_OVERRIDE_GFX_VERSION - GFX version override for GPU compatibility
 #     RX 7900 XTX/XT (gfx1100): 11.0.0
 #     RX 7800 XT / 7700 XT (gfx1101): 11.0.1
 #     RX 7600 (gfx1102): 11.0.2
 #     RX 6900/6800 XT (gfx1030): 10.3.0
-#   Set in .env file: HSA_OVERRIDE_GFX_VERSION=11.0.1
+#   RENDER_GROUP_GID - Host's render group GID for /dev/kfd access
+#     Find with: stat -c '%g' /dev/kfd
+#     Common values: 109 (Ubuntu), 993 (Fedora/RHEL), varies by distro
 
 services:
   celery-worker:
@@ -31,9 +33,12 @@ services:
     devices:
       - /dev/kfd:/dev/kfd
       - /dev/dri:/dev/dri
+    # Add host's video and render group GIDs for device access.
+    # The render group GID varies by distro (e.g. 109 on Ubuntu, 993 on Fedora).
+    # Using numeric GID ensures it matches the host's /dev/kfd ownership.
     group_add:
       - video
-      - render
+      - "${RENDER_GROUP_GID:-109}"
     # ROCm requires seccomp=unconfined for HSA memory mapping
     # See: https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/docker.html
     security_opt:

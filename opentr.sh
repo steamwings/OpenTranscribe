@@ -142,9 +142,11 @@ detect_and_configure_hardware() {
     export COMPUTE_TYPE="float16"
     export USE_GPU="true"
 
-    # Verify /dev/kfd exists (required for ROCm GPU access in containers)
+    # Auto-detect render group GID from /dev/kfd for container device access
     if [ -c "/dev/kfd" ]; then
-      echo "✅ ROCm kernel fusion driver available (/dev/kfd)"
+      RENDER_GID=$(stat -c '%g' /dev/kfd 2>/dev/null || stat -f '%g' /dev/kfd 2>/dev/null || echo "109")
+      export RENDER_GROUP_GID="$RENDER_GID"
+      echo "✅ ROCm kernel fusion driver available (/dev/kfd, render GID: $RENDER_GID)"
     else
       echo "⚠️  AMD GPU detected but /dev/kfd not found"
       echo "   ROCm GPU access may not work in containers"
