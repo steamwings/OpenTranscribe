@@ -64,9 +64,10 @@ LABEL org.opencontainers.image.title="OpenTranscribe Backend (ROCm)" \
 # hsa-rocr provides the HSA runtime (libhsa-runtime64.so) with symbols like
 # hsa_amd_memory_get_preferred_copy_engine that ROCm 7.0's libamdhip64 requires.
 # CRITICAL: Debian Trixie ships libhsa-runtime64-1 (ROCm 6.x) which lacks ROCm 7.0
-# symbols. When PyTorch loads first, it can trigger loading the Debian HSA runtime
-# (shared libs load once per process). We register /opt/rocm/lib in ldconfig so the
-# ROCm 7.0 HSA runtime takes precedence even for transitive dependency resolution.
+# symbols. The dynamic linker may resolve it before the ROCm 7.0 version despite
+# LD_LIBRARY_PATH and ldconfig. We override the Debian symlink to point to the
+# ROCm 7.0 version, ensuring the correct HSA runtime is used regardless of how
+# the linker finds it (RPATH, ldconfig cache, or default search paths).
 # We use the AMD apt repo targeting Ubuntu Noble (24.04), which is compatible
 # with Debian Trixie for these shared library packages.
 ARG ROCM_VERSION=7.0
@@ -87,6 +88,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     hipfft \
     miopen-hip \
     && echo "/opt/rocm/lib" > /etc/ld.so.conf.d/rocm.conf \
+    && ln -sf /opt/rocm/lib/libhsa-runtime64.so.1 /usr/lib/x86_64-linux-gnu/libhsa-runtime64.so.1 \
     && ldconfig \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
