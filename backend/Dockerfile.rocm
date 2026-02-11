@@ -69,6 +69,8 @@ LABEL org.opencontainers.image.title="OpenTranscribe Backend (ROCm)" \
 #   hip-dev can't be installed via apt because it pulls rocm-llvm which depends on
 #   libstdc++-11-dev (unavailable on Trixie). Instead we download the .deb and
 #   extract only the include directory — no dependency resolution needed.
+# libstdc++-14-dev: C++ standard library headers (<utility>, etc.) needed by
+#   comgr/hiprtc during MIOpen JIT compilation. Normally provided by rocm-llvm.
 # Debian Trixie ships libhsa-runtime64-1 (ROCm 6.x) which we override via symlink.
 # We use the AMD apt repo targeting Ubuntu Noble (24.04), compatible with Trixie.
 ARG ROCM_VERSION=7.0
@@ -78,6 +80,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     libimage-exiftool-perl \
     libgomp1 \
+    libstdc++-14-dev \
     && echo "deb [arch=amd64 trusted=yes] https://repo.radeon.com/rocm/apt/${ROCM_VERSION}/ noble main" \
        > /etc/apt/sources.list.d/rocm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
