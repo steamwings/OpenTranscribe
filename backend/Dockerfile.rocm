@@ -60,16 +60,13 @@ LABEL org.opencontainers.image.title="OpenTranscribe Backend (ROCm)" \
       org.opencontainers.image.documentation="https://github.com/davidamacey/OpenTranscribe/blob/master/README.md"
 
 # Install runtime dependencies and ROCm runtime libraries
-# ROCm 7.0 libs are needed by CTranslate2's ROCm wheel at runtime.
-# hsa-rocr provides the HSA runtime (libhsa-runtime64.so) with symbols like
-# hsa_amd_memory_get_preferred_copy_engine that ROCm 7.0's libamdhip64 requires.
-# CRITICAL: Debian Trixie ships libhsa-runtime64-1 (ROCm 6.x) which lacks ROCm 7.0
-# symbols. The dynamic linker may resolve it before the ROCm 7.0 version despite
-# LD_LIBRARY_PATH and ldconfig. We override the Debian symlink to point to the
-# ROCm 7.0 version, ensuring the correct HSA runtime is used regardless of how
-# the linker finds it (RPATH, ldconfig cache, or default search paths).
-# We use the AMD apt repo targeting Ubuntu Noble (24.04), which is compatible
-# with Debian Trixie for these shared library packages.
+# ROCm 7.0 libs needed by CTranslate2's ROCm wheel at runtime.
+# hsa-rocr: HSA runtime with ROCm 7.0 symbols (hsa_amd_memory_get_preferred_copy_engine)
+# rocrand-dev: Headers for MIOpen JIT kernel compilation on consumer GPUs (gfx1100/1101)
+#   PyTorch ROCm wheels lack pre-compiled MIOpen kernels for RDNA 3, so MIOpen compiles
+#   them at first run. This needs rocrand headers (rocrand/rocrand_xorwow.h).
+# Debian Trixie ships libhsa-runtime64-1 (ROCm 6.x) which we override via symlink.
+# We use the AMD apt repo targeting Ubuntu Noble (24.04), compatible with Trixie.
 ARG ROCM_VERSION=7.0
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
@@ -87,6 +84,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     hipsolver \
     hipfft \
     miopen-hip \
+    rocrand-dev \
     && echo "/opt/rocm/lib" > /etc/ld.so.conf.d/rocm.conf \
     && ldconfig \
     && ln -sf /opt/rocm/lib/libhsa-runtime64.so.1 /usr/lib/x86_64-linux-gnu/libhsa-runtime64.so.1 \
