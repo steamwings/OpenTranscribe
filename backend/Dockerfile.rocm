@@ -69,8 +69,11 @@ LABEL org.opencontainers.image.title="OpenTranscribe Backend (ROCm)" \
 #   hip-dev can't be installed via apt because it pulls rocm-llvm which depends on
 #   libstdc++-11-dev (unavailable on Trixie). Instead we download the .deb and
 #   extract only the include directory — no dependency resolution needed.
-# libstdc++-14-dev: C++ standard library headers (<utility>, etc.) needed by
-#   comgr/hiprtc during MIOpen JIT compilation. Normally provided by rocm-llvm.
+# C++ header stubs: hiprtc/comgr's built-in hiprtc_runtime.h provides type traits
+#   (integral_constant, enable_if, etc.) but rocrand headers do #include <utility>
+#   which is unused. We can't install real C++ headers (GCC's conflict with
+#   hiprtc_runtime.h's definitions; rocm-llvm can't be installed on Trixie).
+#   Instead we create empty stubs in /opt/rocm/include/ so the #include resolves.
 # Debian Trixie ships libhsa-runtime64-1 (ROCm 6.x) which we override via symlink.
 # We use the AMD apt repo targeting Ubuntu Noble (24.04), compatible with Trixie.
 ARG ROCM_VERSION=7.0
@@ -80,7 +83,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     libimage-exiftool-perl \
     libgomp1 \
-    libstdc++-14-dev \
     && echo "deb [arch=amd64 trusted=yes] https://repo.radeon.com/rocm/apt/${ROCM_VERSION}/ noble main" \
        > /etc/apt/sources.list.d/rocm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
@@ -96,6 +98,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && dpkg-deb -x hip-dev_*.deb /tmp/hip-extract \
     && cp -a /tmp/hip-extract/opt/rocm*/include/* /opt/rocm/include/ 2>/dev/null || true \
     && rm -rf /tmp/hip-extract /tmp/hip-dev_*.deb \
+    && printf '#pragma once\n' | tee /opt/rocm/include/utility /opt/rocm/include/type_traits > /dev/null \
     && echo "/opt/rocm/lib" > /etc/ld.so.conf.d/rocm.conf \
     && ldconfig \
     && ln -sf /opt/rocm/lib/libhsa-runtime64.so.1 /usr/lib/x86_64-linux-gnu/libhsa-runtime64.so.1 \
