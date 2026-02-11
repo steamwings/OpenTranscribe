@@ -88,8 +88,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     hipfft \
     miopen-hip \
     && echo "/opt/rocm/lib" > /etc/ld.so.conf.d/rocm.conf \
-    && ln -sf /opt/rocm/lib/libhsa-runtime64.so.1 /usr/lib/x86_64-linux-gnu/libhsa-runtime64.so.1 \
     && ldconfig \
+    && ln -sf /opt/rocm/lib/libhsa-runtime64.so.1 /usr/lib/x86_64-linux-gnu/libhsa-runtime64.so.1 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -113,10 +113,21 @@ WORKDIR /app
 # Copy Python packages from builder stage
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
+# Replace PyTorch's and Triton's bundled ROCm 6.4 HSA runtime with ROCm 7.0
+# Both bundle libhsa-runtime64.so (ROCm 6.4, SONAME .so.1). CTranslate2 needs
+# ROCm 7.0's version (with hsa_amd_memory_get_preferred_copy_engine@ROCR_1).
+# Since shared libs with the same SONAME load only once per process, whichever
+# loads first wins. PyTorch loads before CTranslate2, so without this fix its
+# ROCm 6.4 HSA runtime is used and CTranslate2 fails with undefined symbol.
+RUN ln -sf /opt/rocm/lib/libhsa-runtime64.so.1 \
+        /home/appuser/.local/lib/python3.13/site-packages/torch/lib/libhsa-runtime64.so && \
+    ln -sf /opt/rocm/lib/libhsa-runtime64.so.1 \
+        /home/appuser/.local/lib/python3.13/site-packages/triton/backends/amd/lib/libhsa-runtime64.so
+
 # Ensure scripts in .local are usable by adding to PATH
 # Set LD_LIBRARY_PATH so CTranslate2 and other native libs can find:
 #   - ROCm system libs (hipblas, rocblas) installed via apt from /opt/rocm/lib
-#   - ROCm runtime libs (amdhip64, hsa-runtime) bundled in PyTorch ROCm wheel
+#   - ROCm runtime libs (amdhip64) bundled in PyTorch ROCm wheel
 # Set cache directories to user home
 ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
